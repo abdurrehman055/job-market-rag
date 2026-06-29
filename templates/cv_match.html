@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}CV Match{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-title">CV Match Analyzer</h1>
+  <p class="page-subtitle">Compare your CV against uploaded job postings and get actionable AI insights</p>
+</div>
+
+{% if not has_postings %}
+<div class="empty-state">
+  <div class="empty-state-icon"><i class="bi bi-database-slash"></i></div>
+  <div class="empty-state-title">No job postings uploaded</div>
+  <div class="empty-state-text">Upload at least one job posting to analyze your CV against.</div>
+  <a href="/upload" class="btn btn-primary">
+    <i class="bi bi-upload me-2"></i>Upload First Posting
+  </a>
+</div>
+
+{% else %}
+<div class="row g-4">
+
+  <!-- ── CV input ───────────────────────────────────────────────── -->
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-file-person me-2" style="color: var(--amber-text);"></i>
+        Your CV / Resume
+      </div>
+      <div class="card-body">
+
+        {% if error %}
+        <div class="alert alert-danger mb-3">
+          <i class="bi bi-exclamation-circle-fill"></i>
+          <div>{{ error }}</div>
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/cv-match" id="cvForm">
+          <div class="mb-3">
+            <label class="form-label">Paste CV Text</label>
+            <textarea
+              class="form-control"
+              name="cv_text"
+              rows="20"
+              required
+              placeholder="Paste your complete CV or resume here…&#10;&#10;Include: skills, experience, education, projects, certifications, etc."
+            >{{ cv_text or '' }}</textarea>
+            <div class="form-hint">Plain text only. Minimum 100 characters.</div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100" id="analyzeBtn">
+            <i class="bi bi-search-heart me-2"></i>Analyze My CV
+          </button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Results panel ─────────────────────────────────────────── -->
+  <div class="col-lg-7">
+
+    {% if result %}
+
+    <!-- Score + best match -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="score-layout">
+
+          <!-- SVG ring -->
+          <div class="score-ring-wrapper">
+            {% set sc = result.match_score %}
+            {% set ring_color = '#10b981' if sc >= 70 else ('#f59e0b' if sc >= 40 else '#ef4444') %}
+            {% set dash = ((sc / 100) * 251.2) | round(1) %}
+            <svg viewBox="0 0 100 100" class="score-svg">
+              <circle cx="50" cy="50" r="40" fill="none"
+                stroke="rgba(255,255,255,0.05)" stroke-width="9"/>
+              <circle cx="50" cy="50" r="40" fill="none"
+                stroke="{{ ring_color }}" stroke-width="9"
+                stroke-dasharray="{{ dash }} 251.2"
+                stroke-linecap="round"
+                transform="rotate(-90 50 50)"/>
+              <text x="50" y="56" text-anchor="middle"
+                fill="{{ ring_color }}" font-size="22"
+                font-weight="700" font-family="system-ui, sans-serif">
+                {{ sc }}
+              </text>
+            </svg>
+            <div class="score-label">Match Score</div>
+          </div>
+
+          <!-- Details -->
+          <div class="score-details">
+            <div class="score-field-label">Best Matching Role</div>
+            <div class="score-best-match">{{ result.best_match }}</div>
+
+            {% if result.recommendation %}
+            <div class="recommendation-box">
+              <i class="bi bi-lightbulb-fill me-1" style="color: var(--amber-text);"></i>
+              {{ result.recommendation }}
+            </div>
+            {% endif %}
+          </div>
+
+        </div>
+
+        {% if insight_note %}
+        <div class="insight-note mt-3">
+          <i class="bi bi-info-circle"></i>
+          {{ insight_note }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Missing skills -->
+    {% if result.missing_skills %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <i class="bi bi-exclamation-triangle me-2" style="color: var(--amber-text);"></i>
+        Missing Skills
+        <span class="badge-count badge-amber">{{ result.missing_skills|length }}</span>
+      </div>
+      <div class="card-body">
+        {% for skill in result.missing_skills %}
+        <span class="missing-chip">{{ skill }}</span>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Detailed analysis -->
+    {% if result.analysis %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <i class="bi bi-file-text me-2" style="color: var(--text-3);"></i>
+        Detailed Analysis
+      </div>
+      <div class="card-body">
+        <div class="analysis-text">{{ result.analysis }}</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Sources -->
+    {% if sources %}
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-link-45deg me-2" style="color: var(--green-text);"></i>
+        Postings Matched Against
+        <span class="badge-count">{{ sources|length }}</span>
+      </div>
+      <div class="card-body p-3">
+        {% for source in sources %}
+        <div class="source-card">
+          <div class="source-meta">
+            <div>
+              <div class="source-company">{{ source.metadata.company_name }}</div>
+              <div class="source-role">{{ source.metadata.role_title }}</div>
+            </div>
+            <div class="relevance-badge">{{ source.relevance_score }}%</div>
+          </div>
+          <div class="source-excerpt">
+            {{ source.document[:200] }}{% if source.document|length > 200 %}…{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Idle placeholder -->
+    <div class="cv-idle-state">
+      <i class="bi bi-person-check idle-icon"></i>
+      <div class="idle-title">Ready to analyze</div>
+      <div class="idle-text">Paste your CV on the left and click <strong>Analyze My CV</strong></div>
+    </div>
+    {% endif %}
+
+  </div>
+
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const cvForm = document.getElementById("cvForm");
+  if (cvForm) {
+    cvForm.addEventListener("submit", function () {
+      const btn = document.getElementById("analyzeBtn");
+      btn.disabled = true;
+      btn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Analyzing…';
+    });
+  }
+</script>
+{% endblock %}

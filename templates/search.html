@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Search &amp; Ask{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-title">Search &amp; Ask</h1>
+  <p class="page-subtitle">Ask any question across all uploaded job postings using semantic search + GPT</p>
+</div>
+
+{% if not has_postings %}
+<div class="empty-state">
+  <div class="empty-state-icon"><i class="bi bi-database-slash"></i></div>
+  <div class="empty-state-title">No job postings yet</div>
+  <div class="empty-state-text">Upload at least one job posting to start asking questions.</div>
+  <a href="/upload" class="btn btn-primary">
+    <i class="bi bi-upload me-2"></i>Upload First Posting
+  </a>
+</div>
+
+{% else %}
+
+<!-- ── Search bar ─────────────────────────────────────────────────── -->
+<div class="card mb-4">
+  <div class="card-body pb-3">
+    <form method="POST" action="/search" id="searchForm">
+      <div class="search-row">
+        <input
+          type="text"
+          class="form-control search-input"
+          name="query"
+          value="{{ query or '' }}"
+          placeholder="e.g. What skills appear most? Am I qualified if I know Python and FastAPI?"
+          required
+          autofocus
+        />
+        <button type="submit" class="btn btn-primary search-btn" id="searchBtn">
+          <i class="bi bi-stars me-2"></i>Ask AI
+        </button>
+      </div>
+    </form>
+
+    <div class="suggestion-row">
+      <span class="suggestion-label">Try:</span>
+      {% for s in [
+          "What skills appear most across all postings?",
+          "What's the average experience required?",
+          "Which posting has the best growth opportunities?"
+      ] %}
+      <button
+        type="button"
+        class="suggestion-chip"
+        onclick="document.querySelector('[name=query]').value='{{ s }}'"
+      >{{ s }}</button>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ── Error ──────────────────────────────────────────────────────── -->
+{% if error %}
+<div class="alert alert-danger">
+  <i class="bi bi-exclamation-circle-fill"></i>
+  <div>{{ error }}</div>
+</div>
+{% endif %}
+
+<!-- ── Results ────────────────────────────────────────────────────── -->
+{% if answer %}
+<div class="row g-4">
+
+  <!-- Answer -->
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <span>
+          <i class="bi bi-stars me-2" style="color: var(--amber-text);"></i>
+          AI Answer
+          {% if query %}<span class="query-pill">{{ query }}</span>{% endif %}
+        </span>
+      </div>
+      <div class="card-body">
+        <div class="answer-box">{{ answer }}</div>
+        {% if insight_note %}
+        <div class="insight-note mt-3">
+          <i class="bi bi-info-circle"></i>
+          {{ insight_note }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Sources -->
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">
+        <i class="bi bi-link-45deg me-2" style="color: var(--green-text);"></i>
+        Sources Used
+        <span class="badge-count">{{ sources|length }}</span>
+      </div>
+      <div class="card-body p-3">
+        {% for source in sources %}
+        <div class="source-card">
+          <div class="source-meta">
+            <div>
+              <div class="source-company">{{ source.metadata.company_name }}</div>
+              <div class="source-role">{{ source.metadata.role_title }}</div>
+            </div>
+            <div class="relevance-badge">{{ source.relevance_score }}%</div>
+          </div>
+          <div class="source-excerpt">
+            {{ source.document[:220] }}{% if source.document|length > 220 %}…{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% elif not error %}
+<div class="idle-hint">
+  <i class="bi bi-search" style="font-size: 38px; opacity: 0.12; display: block; margin-bottom: 12px;"></i>
+  Type a question above and click <strong>Ask AI</strong> to get started.
+</div>
+{% endif %}
+
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const searchForm = document.getElementById("searchForm");
+  if (searchForm) {
+    searchForm.addEventListener("submit", function () {
+      const btn = document.getElementById("searchBtn");
+      btn.disabled = true;
+      btn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Searching…';
+    });
+  }
+</script>
+{% endblock %}

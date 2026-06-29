@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Upload Job Posting{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-title">Upload Job Posting</h1>
+  <p class="page-subtitle">Paste a job description to add it to your intelligence database</p>
+</div>
+
+<div class="row g-4">
+
+  <!-- ── Form ──────────────────────────────────────────────────────── -->
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header">
+        <i class="bi bi-upload me-2" style="color: var(--amber-text);"></i>
+        New Job Posting
+      </div>
+      <div class="card-body">
+
+        {% if success %}
+        <div class="alert alert-success">
+          <i class="bi bi-check-circle-fill"></i>
+          <div>{{ success }}</div>
+        </div>
+        {% endif %}
+
+        {% if error %}
+        <div class="alert alert-danger">
+          <i class="bi bi-exclamation-circle-fill"></i>
+          <div>{{ error }}</div>
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/upload" id="uploadForm">
+
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Company Name</label>
+              <input
+                type="text"
+                class="form-control"
+                name="company_name"
+                value="{{ company_name or '' }}"
+                placeholder="e.g. Devsinc, Systems Ltd, Arbisoft"
+                required
+                maxlength="255"
+              />
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Role Title</label>
+              <input
+                type="text"
+                class="form-control"
+                name="role_title"
+                value="{{ role_title or '' }}"
+                placeholder="e.g. Senior Software Engineer"
+                required
+                maxlength="255"
+              />
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label">Full Job Posting Text</label>
+            <textarea
+              class="form-control"
+              name="job_text"
+              rows="16"
+              required
+              placeholder="Paste the complete job posting here — description, responsibilities, requirements, qualifications, tech stack, benefits…"
+            >{{ job_text or '' }}</textarea>
+            <div class="form-hint">Paste the complete text for best results. Minimum 50 characters.</div>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="submitBtn">
+            <i class="bi bi-upload me-2"></i>Upload &amp; Process
+          </button>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Side panel ────────────────────────────────────────────────── -->
+  <div class="col-lg-4 d-flex flex-column gap-3">
+
+    <div class="tip-box">
+      <div class="tip-box-title">
+        <i class="bi bi-lightbulb-fill"></i>
+        Tips for best results
+      </div>
+      <ul class="tip-box-list">
+        <li>Include the full job description with all requirements</li>
+        <li>Add responsibilities, qualifications, and tech stack details</li>
+        <li>Include the "About the company" section if present</li>
+        <li>More context = richer AI answers and better CV matching</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="how-it-works-title">
+          <i class="bi bi-info-circle"></i>
+          How it works
+        </div>
+        <div class="how-it-works-steps">
+          <div class="step-item">
+            <span class="step-num">1</span>
+            <span>Text is split into 500-character chunks with 50-char overlap</span>
+          </div>
+          <div class="step-item">
+            <span class="step-num">2</span>
+            <span>Each chunk is embedded via OpenAI <code>text-embedding-ada-002</code></span>
+          </div>
+          <div class="step-item">
+            <span class="step-num">3</span>
+            <span>Vectors stored persistently in ChromaDB on disk</span>
+          </div>
+          <div class="step-item">
+            <span class="step-num">4</span>
+            <span>Ready for semantic search &amp; GPT-4o-mini Q&amp;A</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <a href="/dashboard" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-grid-1x2 me-1"></i>View all postings
+    </a>
+
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const uploadForm = document.getElementById("uploadForm");
+  if (uploadForm) {
+    uploadForm.addEventListener("submit", function () {
+      const btn = document.getElementById("submitBtn");
+      btn.disabled = true;
+      btn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Processing…';
+    });
+  }
+</script>
+{% endblock %}
