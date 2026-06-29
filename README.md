@@ -126,14 +126,17 @@ Open [http://localhost:8000](http://localhost:8000) — you will be redirected t
 
 ## Screenshots
 
-> _Add screenshots here after first deployment._
+### Dashboard
+![Dashboard](screenshots/dashboard.png)
 
-| Page | Description |
-|---|---|
-| Dashboard | Stat cards + skill chart + postings list |
-| Upload | Form with duplicate detection and validation |
-| Search & Ask | Semantic Q&A with source attribution |
-| CV Match | Score ring + missing skills + detailed analysis |
+### Upload Job Posting
+![Upload](screenshots/upload.png)
+
+### Search & Ask
+![Search](screenshots/search.png)
+
+### CV Match Analyzer
+![CV Match](screenshots/cv-match.png)
 
 ---
 
